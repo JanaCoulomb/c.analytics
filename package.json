@@ -1,8 +1,8 @@
 {
   "name": "c.analytics",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
-  "main": "index.js",
+  "main": "cdotanalytics",
   "scripts": {
     "test": "nodemon devtools/test.server.js"
   },
@@ -12,7 +12,6 @@
     "accept-language-parser": "^1.5.0",
     "express": "^4.19.2",
     "fs": "^0.0.1-security",
-    "multer": "^1.4.5-lts.1",
     "node-cleanup": "^2.1.2",
     "object-hash": "^3.0.0",
     "path": "^0.12.7"

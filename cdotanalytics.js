@@ -1,9 +1,11 @@
 var fs = require('fs');
 const path = require('path');
+const express = require('express')
+
 var objecthash = require('object-hash');
 var parser = require('accept-language-parser');
 
-
+var instance;
 
 function ensureDirectoryExistence(filePath) {
     var dirname = path.dirname(filePath);
@@ -14,14 +16,36 @@ function ensureDirectoryExistence(filePath) {
     fs.mkdirSync(dirname);
 }
 
+function create(app,params) {
+    var instance = new CdotAnalytcs(params)
+
+    var nodeCleanup = require('node-cleanup');
+
+    // inti nodeCleanup
+    nodeCleanup(function (exitCode, signal) {
+        if (signal) {
+            instance.exitHandler()
+            nodeCleanup.uninstall(); // don't call cleanup handler again
+            return false;
+        }
+
+    });
+
+    app.use(instance.params.urlbase,express.static('dist'));
+ 
+    app.post(instance.params.urlbase+'/recieveAnalyticsData',express.json(),instance.recieveAnalyticsData)
+    app.post(instance.params.urlbase+'/recieveAnalyticsDeleteRequest',express.json(),instance.recieveAnalyticsDeleteRequest)
+
+    exports.instance = instance;
+}
+
 class CdotAnalytcs {
 
     constructor(params) {
         params = params || {}
 
-        
-
-        params.path = params.path || "c.analytics"
+        params.path = params.path || "/c.analytics"
+        params.urlbase = params.urlbase || "/c.analytics"
 
 
         params.askConsent = params.askConsent || true
@@ -72,6 +96,9 @@ class CdotAnalytcs {
 
     recieveAnalyticsData = (req, res) =>  {
         var hash = this.gethash(req);
+        console.log(req.query);
+
+        console.log(req.body);
 
         var client = undefined;
 
@@ -105,7 +132,7 @@ class CdotAnalytcs {
         //if no time specified, we use 5 seconds
         var timetoadd = req.body.totalTime ? req.body.totalTime : 5 * 1000;
         
-        //if very long time we capto 5 min cause thats unrealistic
+        //if very long time we cap to 5 min cause thats unrealistic
         if(timetoadd > 1000 * 60 * 5)
             timetoadd = 1000 * 60 * 5;
 
@@ -146,7 +173,7 @@ class CdotAnalytcs {
     update = () => {
         new Map( this.connectedmap).forEach((value, key, map) => {
 
-            if(value.lastupdatetime < new Date().getTime() - 1000 * 60 * 20)
+            if(value.lastupdatetime < new Date().getTime() - 1000 * 60 * 30)
             {
                 this.endClientConnection(key);
             }
@@ -211,14 +238,6 @@ class CdotAnalytcs {
         var getRequestsPerDay  = [];
         var getRequestsPerHour  = [];
 
-   
-    
-
-
-        
-
-  
-
         var getVisitHistoryByDay = [];
         var getEngagementHistoryByDay = [];
         for (let i = 0; i < 20; i++) {
@@ -251,79 +270,84 @@ class CdotAnalytcs {
         }
     
         entries.forEach(element => {
+
+            if(element.visitId)
+            {
+                var timespent = 0;
+                element.pages.forEach(page => {
+                    timespent += page.time;
     
-            var timespent = 0;
-            element.pages.forEach(page => {
-                timespent += page.time;
-
-                if(!getStatsPerPageVisits[page.title])
-                    getStatsPerPageVisits[page.title] = 1;
-                else
-                    getStatsPerPageVisits[page.title] += 1;
-    
-                if(!getStatsPerPageTime[page.title])
-                    getStatsPerPageTime[page.title] = page.time;
-                else
-                    getStatsPerPageTime[page.title] += page.time;
-               
-            });
-            getAverageTime+=timespent;
-
-
-            element.languages.forEach(language => {
-
-                var n = language.r ? language.c + "-" + language.r : language.c;
-             
-                if(!getStatsPerLanguage[n])
-                    getStatsPerLanguage[n] = language.q;
-                else
-                    getStatsPerLanguage[n] += language.q;
-
-                if(language.q >= 1)
-                {
-                    if(!getStatsPerFirstLanguage[n])
-                        getStatsPerFirstLanguage[n] = 1;
+                    if(!getStatsPerPageVisits[page.title])
+                        getStatsPerPageVisits[page.title] = 1;
                     else
-                        getStatsPerFirstLanguage[n] += 1;
-                }
-               
-            });
+                        getStatsPerPageVisits[page.title] += 1;
         
-            let d = new Date(element.utc);
-        
-            let Difference_In_Time = (Date.now() - new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), element.hour)));
-                
-            let Difference_In_Hours = Math.round(Difference_In_Time / (1000 * 3600));
-            let Difference_In_Days = Math.floor(Difference_In_Time / (1000 * 3600 * 24));
-            let Difference_In_Weeks = Math.floor(Difference_In_Time / (1000 * 3600 * 24) / 7);
-          
-
-            if(getVisitHistoryByDay.length > Difference_In_Days)
-                getVisitHistoryByDay[Difference_In_Days] += 1;
-            if(getEngagementHistoryByDay.length > Difference_In_Days)
-                getEngagementHistoryByDay[Difference_In_Days] += timespent;
+                    if(!getStatsPerPageTime[page.title])
+                        getStatsPerPageTime[page.title] = page.time;
+                    else
+                        getStatsPerPageTime[page.title] += page.time;
+                   
+                });
+                getAverageTime+=timespent;
+    
+    
+                element.languages.forEach(language => {
+    
+                    var n = language.r ? language.c + "-" + language.r : language.c;
+                 
+                    if(!getStatsPerLanguage[n])
+                        getStatsPerLanguage[n] = language.q;
+                    else
+                        getStatsPerLanguage[n] += language.q;
+    
+                    if(language.q >= 1)
+                    {
+                        if(!getStatsPerFirstLanguage[n])
+                            getStatsPerFirstLanguage[n] = 1;
+                        else
+                            getStatsPerFirstLanguage[n] += 1;
+                    }
+                   
+                });
             
-            if(getVisitHistoryByWeek.length > Difference_In_Weeks)
-                getVisitHistoryByWeek[Difference_In_Weeks] += 1;
-            if(getEngagementHistoryByWeek.length > Difference_In_Weeks)
-                getEngagementHistoryByWeek[Difference_In_Weeks] += timespent;
+                let d = new Date(element.utc);
             
-            if(getVisitHistoryByHours.length > Difference_In_Hours)
-                getVisitHistoryByHours[Difference_In_Hours] += 1;
-            if(getEngagementHistoryByHours.length > Difference_In_Hours)
-                getEngagementHistoryByHours[Difference_In_Hours] += timespent;
+                let Difference_In_Time = (Date.now() - new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), element.hour)));
                     
-
+                let Difference_In_Hours = Math.round(Difference_In_Time / (1000 * 3600));
+                let Difference_In_Days = Math.floor(Difference_In_Time / (1000 * 3600 * 24));
+                let Difference_In_Weeks = Math.floor(Difference_In_Time / (1000 * 3600 * 24) / 7);
+              
+    
+                if(getVisitHistoryByDay.length > Difference_In_Days)
+                    getVisitHistoryByDay[Difference_In_Days] += 1;
+                if(getEngagementHistoryByDay.length > Difference_In_Days)
+                    getEngagementHistoryByDay[Difference_In_Days] += timespent;
                 
-        
-            getRequestsPerDay[element.day]+=1;
-            getRequestsPerHour[element.hour]+=1;
+                if(getVisitHistoryByWeek.length > Difference_In_Weeks)
+                    getVisitHistoryByWeek[Difference_In_Weeks] += 1;
+                if(getEngagementHistoryByWeek.length > Difference_In_Weeks)
+                    getEngagementHistoryByWeek[Difference_In_Weeks] += timespent;
+                
+                if(getVisitHistoryByHours.length > Difference_In_Hours)
+                    getVisitHistoryByHours[Difference_In_Hours] += 1;
+                if(getEngagementHistoryByHours.length > Difference_In_Hours)
+                    getEngagementHistoryByHours[Difference_In_Hours] += timespent;
+                        
+    
+                    
+            
+                getRequestsPerDay[element.day]+=1;
+                getRequestsPerHour[element.hour]+=1;
+            }
+    
+
             
         });
         
     
     
-        getAverageTime = Math.round(getAverageTime / entries.length * 10000) / 10000;
+        getAverageTime = Math.round(getAverageTime / entries.length / 1000.0);
     
         return {getStatsPerPageTime,getStatsPerPageVisits,getStatsPerLanguage,getStatsPerFirstLanguage,getRequestsPerDay,getRequestsPerHour,getVisitHistoryByDay,getVisitHistoryByWeek,getVisitHistoryByHours,getEngagementHistoryByDay,getEngagementHistoryByWeek,getEngagementHistoryByHours,getAverageTime};
     
@@ -331,4 +355,5 @@ class CdotAnalytcs {
 
 }
 
-module.exports.create = params => new CdotAnalytcs(params);
+module.exports.create = create;
+module.exports.instance = instance;
