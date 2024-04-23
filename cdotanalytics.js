@@ -46,7 +46,7 @@ class CdotAnalytcs {
     constructor(params) {
         params = params || {}
 
-        params.path = params.path || "/c.analytics"
+        params.path = params.path || "c.analytics"
         params.urlbase = params.urlbase || "/c.analytics"
 
 
