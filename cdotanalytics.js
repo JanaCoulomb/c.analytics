@@ -2,6 +2,7 @@ var fs = require('fs');
 const path = require('path');
 const express = require('express')
 const isbot = require('isbot');
+const nodeCleanup = require('node-cleanup');
 
 
 var objecthash = require('object-hash');
@@ -20,26 +21,24 @@ function ensureDirectoryExistence(filePath) {
 }
 
 function create(app,params) {
-    var instance = new CdotAnalytcs(params)
+    exports.instance = new CdotAnalytcs(params)
 
-    var nodeCleanup = require('node-cleanup');
 
     // inti nodeCleanup
     nodeCleanup(function (exitCode, signal) {
         if (signal) {
-            instance.exitHandler()
+            exports.instance.exitHandler()
             nodeCleanup.uninstall(); // don't call cleanup handler again
             return false;
         }
 
     });
 
-    app.use(instance.params.urlbase,express.static(path.join(__dirname, 'dist')));
+    app.use( exports.instance.params.urlbase,express.static(path.join(__dirname, 'dist')));
  
-    app.post(instance.params.urlbase+'/recieveAnalyticsData',express.json(),instance.recieveAnalyticsData)
-    app.post(instance.params.urlbase+'/recieveAnalyticsDeleteRequest',express.json(),instance.recieveAnalyticsDeleteRequest)
+    app.post( exports.instance.params.urlbase+'/recieveAnalyticsData',express.json(), exports.instance.recieveAnalyticsData)
+    app.post( exports.instance.params.urlbase+'/recieveAnalyticsDeleteRequest',express.json(), exports.instance.recieveAnalyticsDeleteRequest)
 
-    exports.instance = instance;
 }
 
 class CdotAnalytcs {
