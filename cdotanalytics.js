@@ -1,9 +1,12 @@
 var fs = require('fs');
 const path = require('path');
 const express = require('express')
+const isbot = require('isbot');
+
 
 var objecthash = require('object-hash');
 var parser = require('accept-language-parser');
+
 
 var instance;
 
@@ -95,57 +98,61 @@ class CdotAnalytcs {
     }    
 
     recieveAnalyticsData = (req, res) =>  {
-        var hash = this.gethash(req);
-        console.log(req.query);
 
-        console.log(req.body);
-
-        var client = undefined;
-
-
-        if(!this.connectedmap.has(hash))
+        //bot check just i case
+        if(!isbot.isbot(req.get("user-agent")))
         {
-
-
-            client = {startdate:new Date(),pagemap:[]};
-
-            if(req.get("accept-language"))
+            var hash = this.gethash(req);
+   
+            var client = undefined;
+    
+    
+            if(!this.connectedmap.has(hash))
             {
-                var languagesshort = [];
-                parser.parse(req.get("accept-language")).forEach(v => {
-                    languagesshort.push({c:v.code,r:v.region,q:v.quality});
-                })
-                client.languages = languagesshort;
+    
+    
+                client = {startdate:new Date(),pagemap:[]};
+    
+                if(req.get("accept-language"))
+                {
+                    var languagesshort = [];
+                    parser.parse(req.get("accept-language")).forEach(v => {
+                        languagesshort.push({c:v.code,r:v.region,q:v.quality});
+                    })
+                    client.languages = languagesshort;
+                }
             }
-        }
-        else {
-            client = this.connectedmap.get(hash);
-
-        }
-       
-        
-
+            else {
+                client = this.connectedmap.get(hash);
     
-
-        client.lastupdatetime = new Date().getTime()
-
-        //if no time specified, we use 5 seconds
-        var timetoadd = req.body.totalTime ? req.body.totalTime : 5 * 1000;
-        
-        //if very long time we cap to 5 min cause thats unrealistic
-        if(timetoadd > 1000 * 60 * 5)
-            timetoadd = 1000 * 60 * 5;
-
-        var title = req.body.siteTitle;
-
+            }
+           
+            
     
-        if(client.pagemap.length > 0 && client.pagemap[client.pagemap.length-1].title == title)
-            client.pagemap[client.pagemap.length-1].time += timetoadd;
-        else
-            client.pagemap.push({title:title,time:timetoadd});
+        
+    
+            client.lastupdatetime = new Date().getTime()
+    
+            //if no time specified, we use 5 seconds
+            var timetoadd = req.body.totalTime ? req.body.totalTime : 5 * 1000;
+            
+            //if very long time we cap to 5 min cause thats unrealistic
+            if(timetoadd > 1000 * 60 * 5)
+                timetoadd = 1000 * 60 * 5;
+    
+            var title = req.body.siteTitle;
+    
+        
+            if(client.pagemap.length > 0 && client.pagemap[client.pagemap.length-1].title == title)
+                client.pagemap[client.pagemap.length-1].time += timetoadd;
+            else
+                client.pagemap.push({title:title,time:timetoadd});
+    
+    
+            this.connectedmap.set(hash,client);
+        }
 
-
-        this.connectedmap.set(hash,client);
+        
 
 
     }   
@@ -181,8 +188,13 @@ class CdotAnalytcs {
     }
   
     recieveAnalyticsDeleteRequest = (req, res) =>  {
-        var hash = gethash(req);
-        this.connectedmap.delete(hash);
+        //bot check just i case
+        if(!isbot.isbot(req.get("user-agent")))
+        {
+            var hash = gethash(req);
+            this.connectedmap.delete(hash);
+        }
+
     }    
 
     getAnalyticsEntries() {

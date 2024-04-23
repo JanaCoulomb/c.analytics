@@ -19,12 +19,12 @@ My take on buildung a privacy centered analytics software for node js applicatio
         const cdotanalytics = require('c.analytics').create(app)
 
         // to get data now
-        Console.log(cdotanalytics.getAnalytics());
+        console.log(cdotanalytics.getAnalytics());
 
     2.2. Client-Side
     
     
-        <script src="/cdotanalytics/cdotanalytics.min.js" data-serveranalyticsurl='/cdotanalytics/recieveAnalyticsData' data-serverdeleteanalyticsurl='/cdotanalytics/recieveAnalyticsDeleteRequest'></script>
+        <script type="text/javascript" src="/c.analytics/cdotanalytics.min.js" data-serveranalyticsbaseurl='/c.analytics'></script>
 
 
 

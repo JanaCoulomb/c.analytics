@@ -33,7 +33,7 @@ app.get('/analytics', (req, res) => {
 
 app.listen(80, () => {
 
-    console.log('server started'+ require('../cdotanalytics').instance)
+    console.log('server started')
 
 })
 
