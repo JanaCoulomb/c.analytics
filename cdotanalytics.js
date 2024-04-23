@@ -34,7 +34,7 @@ function create(app,params) {
 
     });
 
-    app.use(instance.params.urlbase,express.static('dist'));
+    app.use(instance.params.urlbase,express.static(path.join(__dirname, 'dist')));
  
     app.post(instance.params.urlbase+'/recieveAnalyticsData',express.json(),instance.recieveAnalyticsData)
     app.post(instance.params.urlbase+'/recieveAnalyticsDeleteRequest',express.json(),instance.recieveAnalyticsDeleteRequest)
