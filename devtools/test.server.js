@@ -25,7 +25,7 @@ app.get('/about', (req, res) => {
 
 app.get('/analytics', (req, res) => {
 
-    res.send(JSON.stringify(cdotanalytics.getAnalytics()));
+    res.send(JSON.stringify(require('../cdotanalytics').instance.getAnalytics()));
 })
 
 

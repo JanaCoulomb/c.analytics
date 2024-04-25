@@ -285,6 +285,10 @@ class CdotAnalytcs {
             if(element.visitId)
             {
                 var timespent = 0;
+                var pagecount = element.pages.length;
+                var longvisitpagecount = 0;
+
+
                 element.pages.forEach(page => {
                     timespent += page.time;
     
@@ -297,9 +301,16 @@ class CdotAnalytcs {
                         getStatsPerPageTime[page.title] = page.time;
                     else
                         getStatsPerPageTime[page.title] += page.time;
+
+                    if(page.time > 15 * 1000)
+                        longvisitpagecount++;
                    
                 });
                 getAverageTime+=timespent;
+
+                //calc engagement
+                var engagement = Math.round((Math.pow(timespent/1000+1,1/4)+Math.sqrt(pagecount)*0.5+Math.sqrt(longvisitpagecount+1)*0.5)*100)/100;
+
     
     
                 element.languages.forEach(language => {
@@ -333,17 +344,17 @@ class CdotAnalytcs {
                 if(getVisitHistoryByDay.length > Difference_In_Days)
                     getVisitHistoryByDay[Difference_In_Days] += 1;
                 if(getEngagementHistoryByDay.length > Difference_In_Days)
-                    getEngagementHistoryByDay[Difference_In_Days] += timespent;
+                    getEngagementHistoryByDay[Difference_In_Days] += engagement;
                 
                 if(getVisitHistoryByWeek.length > Difference_In_Weeks)
                     getVisitHistoryByWeek[Difference_In_Weeks] += 1;
                 if(getEngagementHistoryByWeek.length > Difference_In_Weeks)
-                    getEngagementHistoryByWeek[Difference_In_Weeks] += timespent;
+                    getEngagementHistoryByWeek[Difference_In_Weeks] += engagement;
                 
                 if(getVisitHistoryByHours.length > Difference_In_Hours)
                     getVisitHistoryByHours[Difference_In_Hours] += 1;
                 if(getEngagementHistoryByHours.length > Difference_In_Hours)
-                    getEngagementHistoryByHours[Difference_In_Hours] += timespent;
+                    getEngagementHistoryByHours[Difference_In_Hours] += engagement;
                         
     
                     
@@ -358,7 +369,7 @@ class CdotAnalytcs {
         
     
     
-        getAverageTime = Math.round(getAverageTime / entries.length / 1000.0);
+        getAverageTime = Math.round(getAverageTime / entries.length);
     
         return {getStatsPerPageTime,getStatsPerPageVisits,getStatsPerLanguage,getStatsPerFirstLanguage,getRequestsPerDay,getRequestsPerHour,getVisitHistoryByDay,getVisitHistoryByWeek,getVisitHistoryByHours,getEngagementHistoryByDay,getEngagementHistoryByWeek,getEngagementHistoryByHours,getAverageTime};
     
